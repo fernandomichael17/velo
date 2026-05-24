@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signUp } from "@/lib/auth-client";
+import { signUp, signIn } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
@@ -35,6 +35,21 @@ export default function RegisterPage() {
     return (
         <div style={{ maxWidth: 400, margin: "100px auto", padding: 24 }}>
             <h1>Daftar di velo</h1>
+            
+            <div style={{ marginBottom: 16 }}>
+                <button
+                    type="button"
+                    onClick={() => signIn.social({ provider: "google", callbackURL: "/dashboard" })}
+                    style={{ width: "100%", padding: "10px", cursor: "pointer", backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "4px" }}
+                >
+                    Daftar dengan Google
+                </button>
+            </div>
+            
+            <div style={{ textAlign: "center", marginBottom: 16, fontSize: "12px", color: "#666" }}>
+                ATAU DENGAN EMAIL
+            </div>
+
             <form onSubmit={handleRegister}>
                 <div style={{ marginBottom: 16 }}>
                     <label>Nama</label>
