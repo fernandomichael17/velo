@@ -29,4 +29,9 @@ export const auth = betterAuth({
     trustedOrigins: [
         process.env.FRONTEND_URL || "http://localhost:3000"
     ],
+
+    // Cookie prefix — HARUS sama dengan auth-client di frontend
+    advanced: {
+        cookiePrefix: "velo",
+    },
 })

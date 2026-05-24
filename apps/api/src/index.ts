@@ -3,10 +3,14 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import { config } from "dotenv";
 import { fromNodeHeaders } from "better-auth/node";
-import { auth } from "./lib/auth.js";
+import workspaceRoutes from "./routes/workspaces.js";
 
-// Load .env dari root project
+// ⚠️ PENTING: Load .env SEBELUM import auth.ts
+// Karena auth.ts membaca process.env saat module dievaluasi
 config({ path: "../../.env" });
+
+// Dynamic import agar dotenv sudah loaded duluan
+const { auth } = await import("./lib/auth.js");
 
 const server = fastify({ logger: true });
 
@@ -51,6 +55,9 @@ server.route({
         }
     },
 });
+
+// Register Workspace routes
+server.register(workspaceRoutes, { prefix: "/api/workspaces" });
 
 // ============================================
 // Health check
