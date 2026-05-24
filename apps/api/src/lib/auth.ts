@@ -25,6 +25,14 @@ export const auth = betterAuth({
         enabled: true,
     },
 
+    // Social Providers
+    socialProviders: {
+        google: {
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        },
+    },
+
     // Trusted origins (frontend URL)
     trustedOrigins: [
         process.env.FRONTEND_URL || "http://localhost:3000"

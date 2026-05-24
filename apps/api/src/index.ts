@@ -12,6 +12,7 @@ config({ path: "../../.env" });
 // Dynamic import agar dotenv sudah loaded duluan
 const { auth } = await import("./lib/auth.js");
 
+const { default: errorHandler } = await import("./plugins/error-handler.js")
 const server = fastify({ logger: true });
 
 // CORS — izinkan frontend
@@ -23,6 +24,7 @@ server.register(cors, {
 });
 
 server.register(cookie);
+server.register(errorHandler);
 
 // ============================================
 // Better Auth — catch-all route /api/auth/*

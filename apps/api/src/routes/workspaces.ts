@@ -3,6 +3,16 @@ import { db, workspaces, workspaceMembers } from "@velo/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../plugins/auth.js";
 import { randomUUID } from "crypto";
+import { z } from "zod";
+import { validateBody } from "../lib/validate.js";
+
+const createWorkspaceSchema = z.object({
+  name: z.string().min(2, "Nama minimal 2 karakter").max(100),
+  slug: z.string()
+    .min(2, "Slug minimal 2 karakter")
+    .max(50)
+    .regex(/^[a-z0-9-]+$/, "Slug hanya boleh huruf kecil, angka, dan strip"),
+});
 
 const workspaceRoutes: FastifyPluginAsync = async (fastify) => {
 
@@ -30,12 +40,11 @@ const workspaceRoutes: FastifyPluginAsync = async (fastify) => {
 
     // 2. POST /api/workspaces -> Buat workspace baru
     fastify.post("/", async (request, reply) => {
-        const { name, slug } = request.body as { name: string; slug: string };
-        const userId = request.user.id;
+        const data = validateBody(request.body, createWorkspaceSchema, reply);
+        if (!data) return; // Jika gagal, validateBody sudah mengirim response error otomatis
 
-        if (!name || !slug) {
-            return reply.status(400).send({ error: "Name and slug are required" });
-        }
+        const { name, slug } = data;
+        const userId = request.user.id;
 
         try {
             // Drizzle Transaction: Buat workspace + Set owner di tabel members
