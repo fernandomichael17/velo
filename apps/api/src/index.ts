@@ -4,6 +4,7 @@ import cookie from "@fastify/cookie";
 import { config } from "dotenv";
 import { fromNodeHeaders } from "better-auth/node";
 import workspaceRoutes from "./routes/workspaces.js";
+import projectRoutes from "./routes/projects.js";
 
 // ⚠️ PENTING: Load .env SEBELUM import auth.ts
 // Karena auth.ts membaca process.env saat module dievaluasi
@@ -60,6 +61,9 @@ server.route({
 
 // Register Workspace routes
 server.register(workspaceRoutes, { prefix: "/api/workspaces" });
+
+// Register Project routes
+server.register(projectRoutes, { prefix: "/api/projects" });
 
 // ============================================
 // Health check
