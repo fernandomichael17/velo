@@ -4,6 +4,7 @@ import {
     text,
     timestamp,
     boolean,
+    integer,
     pgEnum,
 } from "drizzle-orm/pg-core";
 
@@ -112,6 +113,72 @@ export const verifications = pgTable("verifications", {
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+    updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
+});
+
+// ============================================
+// ENUMS — Phase 2
+// ============================================
+
+export const projectStatusEnum = pgEnum("project_status", [
+    "active",
+    "paused",
+    "completed",
+    "archived"
+]);
+
+export const taskStatusEnum = pgEnum("task_status", [
+    "backlog",
+    "todo",
+    "in_progress",
+    "review",
+    "done",
+]);
+
+export const taskPriorityEnum = pgEnum("task_priority", [
+    "low",
+    "medium",
+    "high",
+    "urgent",
+]);
+
+// ============================================
+// PROJECTS
+// ============================================
+export const projects = pgTable("projects", {
+    id: text("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    status: projectStatusEnum("status").notNull().default("active"),
+    workspaceId: text("workspace_id")
+        .notNull()
+        .references(() => workspaces.id, { onDelete: "cascade" }),
+    ownerId: text("owner_id")
+        .notNull()
+        .references(() => users.id),
+    startDate: timestamp("start_date"),
+    dueDate: timestamp("due_date"),
+    createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+    updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
+});
+
+// ============================================
+// TASKS
+// ============================================
+export const tasks = pgTable("tasks", {
+    id: text("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
+    title: varchar("title", { length: 500 }).notNull(),
+    description: text("description"),
+    status: taskStatusEnum("status").notNull().default("backlog"),
+    priority: taskPriorityEnum("priority").notNull().default("medium"),
+    position: integer("position").notNull().default(0),
+    projectId: text("project_id")
+        .notNull()
+        .references(() => projects.id, { onDelete: "cascade" }),
+    assigneeId: text("assignee_id")
+        .references(() => users.id),
+    dueDate: timestamp("due_date"),
     createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
     updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
 });
