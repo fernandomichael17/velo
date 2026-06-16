@@ -1,17 +1,22 @@
 import type { FastifyPluginAsync } from "fastify";
-import { db, workspaces, workspaceMembers } from "@velo/db";
+import { db, workspaces, workspaceMembers, users } from "@velo/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../plugins/auth.js";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { validateBody } from "../lib/validate.js";
+import { request } from "http";
 
 const createWorkspaceSchema = z.object({
-  name: z.string().min(2, "Nama minimal 2 karakter").max(100),
-  slug: z.string()
-    .min(2, "Slug minimal 2 karakter")
-    .max(50)
-    .regex(/^[a-z0-9-]+$/, "Slug hanya boleh huruf kecil, angka, dan strip"),
+    name: z.string().min(2, "Nama minimal 2 karakter").max(100),
+    slug: z.string()
+        .min(2, "Slug minimal 2 karakter")
+        .max(50)
+        .regex(/^[a-z0-9-]+$/, "Slug hanya boleh huruf kecil, angka, dan strip"),
+});
+
+const inviteMemberSchema = z.object({
+    email: z.string().email("Format email tidak valid"),
 });
 
 const workspaceRoutes: FastifyPluginAsync = async (fastify) => {
@@ -100,6 +105,105 @@ const workspaceRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         return reply.send(workspaceDetail);
+    });
+
+    // 4. GET /api/workspaces/:id/members
+    fastify.get("/:id/members", async (request, reply) => {
+        const { id } = request.params as { id: string };
+        const userId = request.user.id;
+
+        // Validasi keanggotaan: Memastikan user yang login terdaftar di workspace tersebut
+        const [membership] = await db
+            .select()
+            .from(workspaceMembers)
+            .where(
+                and(
+                    eq(workspaceMembers.workspaceId, id),
+                    eq(workspaceMembers.userId, userId)
+                )
+            );
+
+        if (!membership) {
+            return reply.status(403).send({ error: "Access denied" });
+        }
+
+        // Ambil daftar anggota beserta profil mereka (JOIN dengan tabel users)
+        const membersList = await db
+            .select({
+                id: users.id,
+                name: users.name,
+                email: users.email,
+                image: users.image,
+                role: workspaceMembers.role,
+                joinedAt: workspaceMembers.joinedAt,
+            })
+            .from(workspaceMembers)
+            .innerJoin(users, eq(workspaceMembers.userId, users.id))
+            .where(eq(workspaceMembers.workspaceId, id));
+
+        return reply.send(membersList);
+    });
+
+    // 5. POST /api/workspaces/:id/members
+    // Menambahkan anggota baru ke workspace (Hanya Owner/Admin)
+    fastify.post("/:id/members", async (request, reply) => {
+        const { id } = request.params as { id: string };
+        const data = validateBody(request.body, inviteMemberSchema, reply);
+        if (!data) return;
+
+        const userId = request.user.id;
+
+        // Validasi hak akses: Hanya Owner/Admin dari workspace ini yang boleh mengundang
+        const [membership] = await db
+            .select()
+            .from(workspaceMembers)
+            .where(
+                and(
+                    eq(workspaceMembers.workspaceId, id),
+                    eq(workspaceMembers.userId, userId)
+                )
+            );
+
+        if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
+            return reply.status(403).send({ error: "Only workspace owners or admins can invite members" });
+        }
+
+        // Cari user yang akan diundang di database berdasarkan email
+        const [userToInvite] = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, data.email));
+
+        if (!userToInvite) {
+            return reply.status(404).send({ error: "User dengan email tersebut tidak ditemukan." });
+        }
+
+        // Cek jika user tersebut sudah terdaftar sebagai anggota workspace
+        const [existingMember] = await db
+            .select()
+            .from(workspaceMembers)
+            .where(
+                and(
+                    eq(workspaceMembers.workspaceId, id),
+                    eq(workspaceMembers.userId, userToInvite.id)
+                )
+            );
+
+        if (existingMember) {
+            return reply.status(400).send({ error: "User tersebut sudah terdaftar di workspace ini." });
+        }
+
+        // Insert anggota baru
+        const [newMember] = await db
+            .insert(workspaceMembers)
+            .values({
+                workspaceId: id,
+                userId: userToInvite.id,
+                role: "member", // Role default untuk anggota baru
+            })
+            .returning();
+
+        return reply.status(201).send(newMember);
     });
 };
 
