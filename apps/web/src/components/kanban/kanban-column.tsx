@@ -14,9 +14,10 @@ interface KanbanColumnProps {
     tasks: Task[];
     colorClass: string;
     projectId: string;
+    workspaceId: string;
 }
 
-export function KanbanColumn({ id, title, tasks, colorClass, projectId }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, tasks, colorClass, projectId, workspaceId }: KanbanColumnProps) {
     const { setNodeRef } = useDroppable({ id });
     const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -66,6 +67,7 @@ export function KanbanColumn({ id, title, tasks, colorClass, projectId }: Kanban
 
             <CreateTaskDialog
                 projectId={projectId}
+                workspaceId={workspaceId}
                 defaultStatus={id}
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}

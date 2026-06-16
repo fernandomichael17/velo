@@ -21,6 +21,7 @@ import { KanbanColumn } from "./kanban-column";
 
 interface KanbanBoardProps {
     projectId: string;
+    workspaceId: string;
 }
 
 const COLUMNS = [
@@ -31,7 +32,7 @@ const COLUMNS = [
     { id: "done", title: "Done", colorClass: "bg-green-500" },
 ] as const;
 
-export function KanbanBoard({ projectId }: KanbanBoardProps) {
+export function KanbanBoard({ projectId, workspaceId }: KanbanBoardProps) {
     const queryClient = useQueryClient();
     const [tasksList, setTasksList] = useState<Task[]>([]);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -215,6 +216,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
                             tasks={columnTasks}
                             colorClass={col.colorClass}
                             projectId={projectId}
+                            workspaceId={workspaceId}
                         />
                     );
                 })}

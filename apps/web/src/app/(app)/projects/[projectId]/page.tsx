@@ -13,6 +13,7 @@ interface ProjectDetail {
     name: string;
     description: string | null;
     status: string;
+    workspaceId: string;
     startDate: string | null;
     dueDate: string | null;
     taskCount: number;
@@ -114,7 +115,7 @@ export default function ProjectDetailPage() {
             </div>
 
             {/* Kanban Board 👈 Render board asli */}
-            <KanbanBoard projectId={project.id} />
+            <KanbanBoard projectId={project.id} workspaceId={project.workspaceId} />
         </div>
     );
 }

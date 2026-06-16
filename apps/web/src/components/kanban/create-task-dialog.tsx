@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,10 +21,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { IconPlus } from "@tabler/icons-react";
+
+interface Member {
+    id: string;
+    name: string;
+    email: string;
+}
 
 interface CreateTaskDialogProps {
     projectId: string;
+    workspaceId: string;
     defaultStatus: "backlog" | "todo" | "in_progress" | "review" | "done";
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -32,6 +38,7 @@ interface CreateTaskDialogProps {
 
 export function CreateTaskDialog({
     projectId,
+    workspaceId,
     defaultStatus,
     open,
     onOpenChange,
@@ -41,10 +48,18 @@ export function CreateTaskDialog({
     const [description, setDescription] = useState("");
     const [status, setStatus] = useState(defaultStatus);
     const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
+    const [assigneeId, setAssigneeId] = useState<string>("unassigned");
 
     // Mengambil status default jika dialog dibuka ulang
     useState(() => {
         setStatus(defaultStatus);
+    });
+
+    // 1. Query mengambil daftar anggota workspace aktif
+    const { data: members = [] } = useQuery<Member[]>({
+        queryKey: ["members", workspaceId],
+        queryFn: () => api.get<Member[]>(`/api/workspaces/${workspaceId}/members`),
+        enabled: !!workspaceId && open, // Hanya fetch ketika dialog ini sedang terbuka
     });
 
     const createTaskMutation = useMutation({
@@ -54,6 +69,7 @@ export function CreateTaskDialog({
             setTitle("");
             setDescription("");
             setPriority("medium");
+            setAssigneeId("unassigned");
             onOpenChange(false);
         },
         onError: (err: any) => {
@@ -69,6 +85,8 @@ export function CreateTaskDialog({
             status,
             priority,
             projectId,
+            // Jika assigneeId bernilai 'unassigned', kirim null ke database
+            assigneeId: assigneeId === "unassigned" ? null : assigneeId,
         });
     };
 
@@ -102,6 +120,28 @@ export function CreateTaskDialog({
                                 onChange={(e) => setDescription(e.target.value)}
                             />
                         </div>
+
+                        {/* Dropdown Assignee */}
+                        <div className="space-y-2">
+                            <Label htmlFor="task-assignee">Ditugaskan Ke (Assignee)</Label>
+                            <Select
+                                value={assigneeId}
+                                onValueChange={(val) => setAssigneeId(val)}
+                            >
+                                <SelectTrigger id="task-assignee">
+                                    <SelectValue placeholder="Pilih rekan tim" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">Belum Ditugaskan (Unassigned)</SelectItem>
+                                    {members.map((member) => (
+                                        <SelectItem key={member.id} value={member.id}>
+                                            {member.name} ({member.email})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="task-status">Status (Kolom)</Label>
