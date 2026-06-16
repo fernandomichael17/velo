@@ -5,7 +5,8 @@ import { api } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { IconArrowLeft, IconFolder, IconCalendar, IconSettings } from "@tabler/icons-react";
+import { IconArrowLeft, IconFolder, IconCalendar } from "@tabler/icons-react";
+import { KanbanBoard } from "@/components/kanban/kanban-board"; // 👈 Impor KanbanBoard baru
 
 interface ProjectDetail {
     id: string;
@@ -21,7 +22,6 @@ export default function ProjectDetailPage() {
     const { projectId } = useParams() as { projectId: string };
     const router = useRouter();
 
-    // Query detail proyek
     const { data: project, isLoading, error } = useQuery<ProjectDetail>({
         queryKey: ["project", projectId],
         queryFn: () => api.get<ProjectDetail>(`/api/projects/${projectId}`),
@@ -113,16 +113,8 @@ export default function ProjectDetailPage() {
                 </Card>
             </div>
 
-            {/* Kanban Board Placeholder */}
-            <Card className="border-dashed bg-gray-50/50">
-                <CardContent className="flex flex-col items-center justify-center py-24 text-center">
-                    <IconSettings size={48} className="text-gray-300 animate-spin-slow mb-4" />
-                    <h3 className="font-semibold text-lg">Kanban Board Sedang Disiapkan</h3>
-                    <p className="text-gray-400 text-xs max-w-sm mt-1 mx-auto">
-                        Halaman proyek telah berhasil dihubungkan dengan API. Di Step 2.5, kita akan mengisi area ini dengan Kanban Board drag-and-drop.
-                    </p>
-                </CardContent>
-            </Card>
+            {/* Kanban Board 👈 Render board asli */}
+            <KanbanBoard projectId={project.id} />
         </div>
     );
 }
